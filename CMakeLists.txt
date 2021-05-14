@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
 project(Matrix_Multiplication C)
-
 set(CMAKE_C_STANDARD 99)
-
-add_executable(Matrix_Multiplication main.c)
+add_executable(Matrix_Multiplication matMultp.c)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
