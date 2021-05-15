@@ -16,12 +16,41 @@ int **Result;
 FILE *fop;
 
 ///This function is used to print the resulting array in the output file
-void printArr(int rows , int columns){
-    for (int i = 0 ; i < rows ;i++){
-        for (int j = 0 ; j < columns ;j++)
+void printArr(){
+    for (int i = 0 ; i < rows1 ;i++){
+        for (int j = 0 ; j < columns2 ;j++)
             fprintf(fop,"%d ",Result[i][j]);
         fprintf(fop,"\n");
     }
+}
+///Point function for each thread in a row solving using second method
+void *calculateMethod2(int row){
+    for (int j = 0 ; j < columns2 ;j++) {
+        for (int k = 0; k < columns1; k++)
+            Result[row][j] += Matrix1[row][k] * Matrix2[k][j];
+    }
+}
+///The second method mentioned which uses one thread per row
+void solveMethod2(){
+    fprintf(fop,"Method #2\nThe Result Array :\n");
+    int numOfThreads = rows1;
+    pthread_t Threads[numOfThreads];
+
+    struct timeval stop, start;
+    gettimeofday(&start, NULL); //start checking time
+
+    for(int i = 0 ; i < numOfThreads ;i++){
+        pthread_create(&Threads[i],NULL,calculateMethod2,i);
+    }
+    for (int i = 0 ; i < numOfThreads ;i++){
+        pthread_join(Threads[i],NULL);
+    }
+    gettimeofday(&stop, NULL); //end checking time
+    printArr();
+    fprintf(fop,"\nSeconds taken %lu\n", stop.tv_sec - start.tv_sec);
+    fprintf(fop,"Microseconds taken: %lu\n", stop.tv_usec - start.tv_usec);
+    fprintf(fop,"Number of threads used : %d" , numOfThreads);
+    fprintf(fop,"\n----------------------------\n");
 }
 
 ///This method is used by thread to solve matrix multiplication by the first method
@@ -46,7 +75,7 @@ void solveMethod1(){
     pthread_join(thread,NULL);
 
     gettimeofday(&stop, NULL); //end checking time
-    printArr(rows1,columns2);
+    printArr();
     fprintf(fop,"\nSeconds taken %lu\n", stop.tv_sec - start.tv_sec);
     fprintf(fop,"Microseconds taken: %lu\n", stop.tv_usec - start.tv_usec);
     fprintf(fop,"Number of threads used : 1");
@@ -73,7 +102,7 @@ int **initializeMatrix (FILE *fp, int rows , int columns){
 }
 
 int main(int argc, char* argv[]) {
-    //This part manages
+    //This part manages arguments
     if (argc ==1){
         Mat1 = "a.txt";
         Mat2 = "b.txt";
@@ -115,6 +144,10 @@ int main(int argc, char* argv[]) {
     reset();
 
     solveMethod1();
+
+    reset();
+
+    solveMethod2();
 
     reset();
 
