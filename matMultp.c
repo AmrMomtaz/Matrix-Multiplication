@@ -23,6 +23,44 @@ void printArr(){
         fprintf(fop,"\n");
     }
 }
+struct threadData{
+    int row,column;
+};
+void *calculateMethod3(void * data) {
+    struct threadData *myData;
+    myData = (struct threadData *) data;
+    int row = myData->row;
+    int column = myData->column;
+    for (int k = 0; k < columns1; k++)
+        Result[row][column] += Matrix1[row][k] * Matrix2[k][column];
+}
+void solveMethod3(){
+    fprintf(fop,"Method #3\nThe Result Array :\n");
+    int numOfThreads = rows1*columns2;
+    pthread_t Threads[rows1][columns2];
+
+    struct timeval stop, start;
+    gettimeofday(&start, NULL); //start checking time
+
+    for(int i = 0 ; i < rows1 ;i++){
+        for(int j = 0 ; j < columns2 ; j++){
+            struct threadData *data = malloc(sizeof (struct threadData));
+            data->row = i;
+            data->column = j;
+            pthread_create(&Threads[i][j],NULL,calculateMethod3,(void *)data);
+        }
+    }
+    for (int i = 0 ; i < rows1 ;i++)
+        for (int j = 0 ; j < columns2 ; j++)
+            pthread_join(Threads[i][j],NULL);
+
+    gettimeofday(&stop, NULL); //end checking time
+    printArr();
+    fprintf(fop,"\nSeconds taken %lu\n", stop.tv_sec - start.tv_sec);
+    fprintf(fop,"Microseconds taken: %lu\n", stop.tv_usec - start.tv_usec);
+    fprintf(fop,"Number of threads used : %d" , numOfThreads);
+    fprintf(fop,"\n----------------------------\n");
+}
 ///Point function for each thread in a row solving using second method
 void *calculateMethod2(int row){
     for (int j = 0 ; j < columns2 ;j++) {
@@ -150,6 +188,8 @@ int main(int argc, char* argv[]) {
     solveMethod2();
 
     reset();
+
+    solveMethod3();
 
     //De-allocation of arrays and closing the output file
     for(int i = 0 ; i <rows1 ; i++){
