@@ -67,7 +67,8 @@ void solveMethod3(){
     printResult(numOfThreads);
 }
 ///This method is used by thread to solve matrix multiplication by the second method
-void *calculateMethod2(int row){
+void *calculateMethod2(void * r){
+    long row = (long) r;
     for (int j = 0 ; j < columns2 ;j++) {
         for (int k = 0; k < columns1; k++)
             Result[row][j] += Matrix1[row][k] * Matrix2[k][j];
@@ -81,8 +82,8 @@ void solveMethod2(){
 
     gettimeofday(&start, NULL); //start checking time
 
-    for(int i = 0 ; i < numOfThreads ;i++){
-        pthread_create(&Threads[i],NULL,calculateMethod2,i);
+    for(long i = 0 ; i < numOfThreads ;i++){
+        pthread_create(&Threads[i],NULL,calculateMethod2,(void *)i);
     }
     for (int i = 0 ; i < numOfThreads ;i++){
         pthread_join(Threads[i],NULL);
@@ -118,8 +119,8 @@ void solveMethod1(){
 ///This function is used to print out the error and close the program
 void error(char *ERR){
     FILE *fpe;
-    fpe = fopen("c.out","w");
-    fprintf(fpe,ERR);
+    fpe = fopen(Output,"w");
+    fprintf(fpe,"%s",ERR);
     fclose(fpe);
     exit(EXIT_FAILURE);
 }
@@ -148,10 +149,10 @@ int **initializeMatrix (char *Mat){
         rows = rows2;
         columns = columns2;
     }
-    int **Result;
-    Result = malloc(rows * columns * sizeof(int));
+    int **ResultMat;
+    ResultMat = malloc(rows * columns * sizeof(int));
     for (int i=0; i<rows; i++)
-        Result[i] = (int *)malloc(columns * sizeof(int));
+        ResultMat[i] = (int *)malloc(columns * sizeof(int));
     for (int i = 0; i < rows; i++)
         for (int j = 0; j < columns; j++){
             char input[15];
@@ -160,9 +161,9 @@ int **initializeMatrix (char *Mat){
                 if (!isdigit(input[k]))
                     error("ERROR : THE ENTERED MATRIX CONTAINS WRONG INPUT");
             }
-            Result[i][j] = atoi(input);
+            ResultMat[i][j] = atoi(input);
         }
-    return Result;
+    return ResultMat;
 }
 
 int main(int argc, char* argv[]) {
@@ -183,7 +184,7 @@ int main(int argc, char* argv[]) {
     //Initialize matrix 2
     Matrix2 = initializeMatrix(Mat2);
 
-    //Check if the 2 matrices can be multiplied together'
+    //Check if the 2 matrices can be multiplied together
     if (columns1 != rows2)
         error("ERROR : THE 2 MATRICES CAN'T BE MULTIPLIED TOGETHER");
 
