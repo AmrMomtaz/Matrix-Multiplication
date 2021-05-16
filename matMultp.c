@@ -19,7 +19,7 @@ FILE *fop;
 struct timeval stop, start;
 
 ///This function is used to print the resulting array in the output file
-void printResult(numberOfThreads){
+void printResult(int numberOfThreads){
     for (int i = 0 ; i < rows1 ;i++){
         for (int j = 0 ; j < columns2 ;j++)
             fprintf(fop,"%d ",Result[i][j]);
@@ -166,7 +166,6 @@ int **initializeMatrix (char *Mat){
 }
 
 int main(int argc, char* argv[]) {
-
     //This part manages arguments
     if (argc ==1){
         Mat1 = "a.txt";
