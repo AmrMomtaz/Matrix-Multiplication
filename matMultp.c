@@ -117,10 +117,10 @@ void solveMethod1(){
     printResult(1);
 }
 ///This function is used to print out the error and close the program
-void error(char *ERR){
+void error(char *ERR,char*ERR2){
     FILE *fpe;
     fpe = fopen(Output,"w");
-    fprintf(fpe,"%s",ERR);
+    fprintf(fpe,"%s %s",ERR,ERR2);
     fclose(fpe);
     exit(EXIT_FAILURE);
 }
@@ -134,17 +134,14 @@ void reset(){
 int **initializeMatrix (char *Mat){
     FILE *fp;
     fp = fopen(Mat,"r");
-    if (fp == NULL){
-        char * e = " : DOESN'T EXIST";
-        error(strcat(Mat, e));
-    }
+    if (fp == NULL)
+        error("ERROR : THE FOLLOWING FILE DOESN'T EXIST ",Mat);
     int rows,columns;
     if (Mat == Mat1){
         fscanf(fp,"row=%d col=%d",&rows1,&columns1);
         rows = rows1;
         columns = columns1;
-    }
-    else{
+    }else{
         fscanf(fp,"row=%d col=%d",&rows2,&columns2);
         rows = rows2;
         columns = columns2;
@@ -159,7 +156,7 @@ int **initializeMatrix (char *Mat){
             fscanf(fp,"%s",input);
             for (int k = 0 ; k < strlen(input); k++){
                 if (!isdigit(input[k]))
-                    error("ERROR : THE ENTERED MATRIX CONTAINS WRONG INPUT");
+                    error("ERROR : WRONG INPUT FORM MATRIX ",Mat);
             }
             ResultMat[i][j] = atoi(input);
         }
@@ -177,7 +174,7 @@ int main(int argc, char* argv[]) {
         Mat2 = argv[2];
         Output = argv[3];
     }else
-        error("ERROR : ARGUMENTS ENTERED ARE WRONG");
+        error("ERROR : ARGUMENTS ENTERED ARE WRONG",NULL);
 
     //Initialize matrix 1
     Matrix1 = initializeMatrix(Mat1);
@@ -186,7 +183,7 @@ int main(int argc, char* argv[]) {
 
     //Check if the 2 matrices can be multiplied together
     if (columns1 != rows2)
-        error("ERROR : THE 2 MATRICES CAN'T BE MULTIPLIED TOGETHER");
+        error("ERROR : THE 2 MATRICES CAN'T BE MULTIPLIED TOGETHER",NULL);
 
     //Allocation of 2D result array(Global variable)
     Result = malloc(rows1 * columns2 * sizeof(int));
