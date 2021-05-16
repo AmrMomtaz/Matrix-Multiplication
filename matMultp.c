@@ -119,7 +119,10 @@ void solveMethod1(){
 ///This function is used to print out the error and close the program
 void error(char *ERR,char*ERR2){
     FILE *fpe;
-    fpe = fopen(Output,"w");
+    if (Output==NULL)
+        fpe = fopen("c.out","w");
+    else
+        fpe = fopen(Output,"w");
     fprintf(fpe,"%s %s",ERR,ERR2);
     fclose(fpe);
     exit(EXIT_FAILURE);
@@ -155,7 +158,7 @@ int **initializeMatrix (char *Mat){
             char input[15];
             fscanf(fp,"%s",input);
             for (int k = 0 ; k < strlen(input); k++){
-                if (!isdigit(input[k]))
+                if (!isdigit(input[k]) && input[k]!='-')
                     error("ERROR : WRONG INPUT FORM MATRIX ",Mat);
             }
             ResultMat[i][j] = atoi(input);
@@ -174,7 +177,7 @@ int main(int argc, char* argv[]) {
         Mat2 = argv[2];
         Output = argv[3];
     }else
-        error("ERROR : ARGUMENTS ENTERED ARE WRONG",NULL);
+        error("ERROR : ARGUMENTS ENTERED ARE WRONG","");
 
     //Initialize matrix 1
     Matrix1 = initializeMatrix(Mat1);
@@ -183,7 +186,7 @@ int main(int argc, char* argv[]) {
 
     //Check if the 2 matrices can be multiplied together
     if (columns1 != rows2)
-        error("ERROR : THE 2 MATRICES CAN'T BE MULTIPLIED TOGETHER",NULL);
+        error("ERROR : THE 2 MATRICES CAN'T BE MULTIPLIED TOGETHER","");
 
     //Allocation of 2D result array(Global variable)
     Result = malloc(rows1 * columns2 * sizeof(int));
