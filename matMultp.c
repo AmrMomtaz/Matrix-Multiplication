@@ -3,9 +3,10 @@
 #include <pthread.h>
 #include <string.h>
 #include <sys/time.h>
+#include <ctype.h>
 
 //Pointers to input and output file names
-char * Mat1,*Mat2,*Output;
+char *Mat1,*Mat2,*Output;
 //values of arrays dimensions
 int rows1,rows2,columns1,columns2;
 //Pointers to 2D matrices
@@ -14,18 +15,26 @@ int **Matrix1,**Matrix2;
 int **Result;
 //Pointer to Output File
 FILE *fop;
+//For time measuring
+struct timeval stop, start;
 
 ///This function is used to print the resulting array in the output file
-void printArr(){
+void printResult(numberOfThreads){
     for (int i = 0 ; i < rows1 ;i++){
         for (int j = 0 ; j < columns2 ;j++)
             fprintf(fop,"%d ",Result[i][j]);
         fprintf(fop,"\n");
     }
+    fprintf(fop,"\nSeconds taken %lu\n", stop.tv_sec - start.tv_sec);
+    fprintf(fop,"Microseconds taken: %lu\n", stop.tv_usec - start.tv_usec);
+    fprintf(fop,"Number of threads used : %d" , numberOfThreads);
+    fprintf(fop,"\n----------------------------\n");
 }
+///Arguments sent for the third method
 struct threadData{
     int row,column;
 };
+///This method is used by thread to solve matrix multiplication by the third method
 void *calculateMethod3(void * data) {
     struct threadData *myData;
     myData = (struct threadData *) data;
@@ -34,12 +43,12 @@ void *calculateMethod3(void * data) {
     for (int k = 0; k < columns1; k++)
         Result[row][column] += Matrix1[row][k] * Matrix2[k][column];
 }
+///The third method mentioned which uses one thread per element
 void solveMethod3(){
     fprintf(fop,"Method #3\nThe Result Array :\n");
     int numOfThreads = rows1*columns2;
     pthread_t Threads[rows1][columns2];
 
-    struct timeval stop, start;
     gettimeofday(&start, NULL); //start checking time
 
     for(int i = 0 ; i < rows1 ;i++){
@@ -55,13 +64,9 @@ void solveMethod3(){
             pthread_join(Threads[i][j],NULL);
 
     gettimeofday(&stop, NULL); //end checking time
-    printArr();
-    fprintf(fop,"\nSeconds taken %lu\n", stop.tv_sec - start.tv_sec);
-    fprintf(fop,"Microseconds taken: %lu\n", stop.tv_usec - start.tv_usec);
-    fprintf(fop,"Number of threads used : %d" , numOfThreads);
-    fprintf(fop,"\n----------------------------\n");
+    printResult(numOfThreads);
 }
-///Point function for each thread in a row solving using second method
+///This method is used by thread to solve matrix multiplication by the second method
 void *calculateMethod2(int row){
     for (int j = 0 ; j < columns2 ;j++) {
         for (int k = 0; k < columns1; k++)
@@ -74,7 +79,6 @@ void solveMethod2(){
     int numOfThreads = rows1;
     pthread_t Threads[numOfThreads];
 
-    struct timeval stop, start;
     gettimeofday(&start, NULL); //start checking time
 
     for(int i = 0 ; i < numOfThreads ;i++){
@@ -83,12 +87,9 @@ void solveMethod2(){
     for (int i = 0 ; i < numOfThreads ;i++){
         pthread_join(Threads[i],NULL);
     }
+
     gettimeofday(&stop, NULL); //end checking time
-    printArr();
-    fprintf(fop,"\nSeconds taken %lu\n", stop.tv_sec - start.tv_sec);
-    fprintf(fop,"Microseconds taken: %lu\n", stop.tv_usec - start.tv_usec);
-    fprintf(fop,"Number of threads used : %d" , numOfThreads);
-    fprintf(fop,"\n----------------------------\n");
+    printResult(numOfThreads);
 }
 
 ///This method is used by thread to solve matrix multiplication by the first method
@@ -106,20 +107,22 @@ void solveMethod1(){
     fprintf(fop,"Method #1\nThe Result Array :\n");
     pthread_t thread;
 
-    struct timeval stop, start;
     gettimeofday(&start, NULL); //start checking time
 
     pthread_create(&thread,NULL,calculateMethod1,NULL);
     pthread_join(thread,NULL);
 
     gettimeofday(&stop, NULL); //end checking time
-    printArr();
-    fprintf(fop,"\nSeconds taken %lu\n", stop.tv_sec - start.tv_sec);
-    fprintf(fop,"Microseconds taken: %lu\n", stop.tv_usec - start.tv_usec);
-    fprintf(fop,"Number of threads used : 1");
-    fprintf(fop,"\n----------------------------\n");
+    printResult(1);
 }
-
+///This function is used to print out the error and close the program
+void error(char *ERR){
+    FILE *fpe;
+    fpe = fopen("c.out","w");
+    fprintf(fpe,ERR);
+    fclose(fpe);
+    exit(EXIT_FAILURE);
+}
 ///This function resets the result array
 void reset(){
     for (int i = 0 ; i < rows1 ;i++)
@@ -127,19 +130,43 @@ void reset(){
             Result[i][j]=0;
 }
 ///This function is used to initialize Matrix 1 and Matrix 2
-int **initializeMatrix (FILE *fp, int rows , int columns){
-    fscanf(fp,"row=%d col=%d",&rows,&columns);
+int **initializeMatrix (char *Mat){
+    FILE *fp;
+    fp = fopen(Mat,"r");
+    if (fp == NULL){
+        char * e = " : DOESN'T EXIST";
+        error(strcat(Mat, e));
+    }
+    int rows,columns;
+    if (Mat == Mat1){
+        fscanf(fp,"row=%d col=%d",&rows1,&columns1);
+        rows = rows1;
+        columns = columns1;
+    }
+    else{
+        fscanf(fp,"row=%d col=%d",&rows2,&columns2);
+        rows = rows2;
+        columns = columns2;
+    }
     int **Result;
     Result = malloc(rows * columns * sizeof(int));
     for (int i=0; i<rows; i++)
         Result[i] = (int *)malloc(columns * sizeof(int));
     for (int i = 0; i < rows; i++)
-        for (int j = 0; j < columns; j++)
-            fscanf(fp,"%d",&Result[i][j]);
+        for (int j = 0; j < columns; j++){
+            char input[15];
+            fscanf(fp,"%s",input);
+            for (int k = 0 ; k < strlen(input); k++){
+                if (!isdigit(input[k]))
+                    error("ERROR : THE ENTERED MATRIX CONTAINS WRONG INPUT");
+            }
+            Result[i][j] = atoi(input);
+        }
     return Result;
 }
 
 int main(int argc, char* argv[]) {
+
     //This part manages arguments
     if (argc ==1){
         Mat1 = "a.txt";
@@ -149,35 +176,25 @@ int main(int argc, char* argv[]) {
         Mat1 = argv[1];
         Mat2 = argv[2];
         Output = argv[3];
-    }else{
-        printf("ARGUMENTS ERROR");
-    }
+    }else
+        error("ERROR : ARGUMENTS ENTERED ARE WRONG");
 
-    //This part initialized the first Matrix
-    FILE *fp1;
-    fp1 = fopen(Mat1,"r");
-    fscanf(fp1,"row=%d col=%d",&rows1,&columns1);
-    Matrix1 = initializeMatrix(fp1,rows1,columns1);
-    fclose(fp1);
-
-    //This part initialized the second matrix
-    FILE *fp2;
-    fp2 = fopen(Mat2,"r");
-    fscanf(fp2,"row=%d col=%d",&rows2,&columns2);
-    Matrix2 = initializeMatrix(fp2,rows2,columns2);
-    fclose(fp2);
+    //Initialize matrix 1
+    Matrix1 = initializeMatrix(Mat1);
+    //Initialize matrix 2
+    Matrix2 = initializeMatrix(Mat2);
 
     //Check if the 2 matrices can be multiplied together'
-    if (rows2 != columns1)
-        printf("ERROR .. THE 2 MATRICES CAN'T BE MULTIPLIED TOGETHER");
+    if (columns1 != rows2)
+        error("ERROR : THE 2 MATRICES CAN'T BE MULTIPLIED TOGETHER");
 
     //Allocation of 2D result array(Global variable)
     Result = malloc(rows1 * columns2 * sizeof(int));
     for (int i=0; i<rows1; i++)
         Result[i] = (int *)malloc(columns2 * sizeof(int));
 
-    //Initializing the output File
-    fop =fopen(Output,"a");
+    //Resetting and Initializing the output File
+    fop =fopen(Output,"w");
 
     reset();
 
